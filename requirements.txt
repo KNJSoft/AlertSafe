@@ -1,0 +1,7 @@
+joblib==1.5.0
+numpy==2.2.5
+python-nmap==0.7.1
+scapy==2.6.1
+scikit-learn==1.6.1
+scipy==1.15.3
+threadpoolctl==3.6.0
