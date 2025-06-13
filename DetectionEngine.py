@@ -52,26 +52,41 @@ class DetectionEngine:
     def detect_threats(self, features):
         threats = []
 
+        # Vérifier que les fonctionnalités nécessaires sont présentes
+        required_features = ['packet_size', 'packet_rate', 'byte_rate', 'tcp_flags']
+        if not all(feature in features for feature in required_features):
+            self.logger.warning("Features manquants pour la détection")
+            return threats
+
         # Détection basée sur les signatures (triées par priorité)
         sorted_rules = sorted(self.signature_rules.items(), key=lambda item: item[1]['priority'])
         for rule_name, rule_data in sorted_rules:
-            if rule_data['condition'](features):
-                threats.append({
-                    'type': 'signature',
-                    'rule': rule_name,
-                    'description': rule_data['description'],
-                    'confidence': rule_data['confidence'],
-                    'details': features  # Ajoute les features pour plus de contexte
-                })
+            try:
+                if rule_data['condition'](features):
+                    threats.append({
+                        'type': 'signature',
+                        'rule': rule_name,
+                        'description': rule_data['description'],
+                        'confidence': rule_data['confidence'],
+                        'details': features
+                    })
+            except Exception as e:
+                self.logger.error(f"Erreur lors de l'évaluation de la règle {rule_name}: {e}")
+                continue
 
         # Détection d'anomalies
         if self.is_trained:
-            feature_vector = np.array([[
-                features['packet_size'],
-                features['packet_rate'],
-                features['byte_rate']
-            ]])
             try:
+                feature_vector = np.array([[
+                    features['packet_size'],
+                    features['packet_rate'],
+                    features['byte_rate']
+                ]])
+                
+                if feature_vector.size == 0:
+                    self.logger.warning("Vector de features vide")
+                    return threats
+
                 anomaly_score = self.anomaly_detector.score_samples(feature_vector)[0]
                 if anomaly_score < -0.5:  # Seuil d'anomalie
                     confidence = min(1.0, abs(anomaly_score))
@@ -83,14 +98,6 @@ class DetectionEngine:
                     })
             except Exception as e:
                 self.logger.error(f"Erreur lors de la détection d'anomalies : {e}", exc_info=True)
-                # Gérer l'erreur (par exemple, ignorer l'échantillon, retourner une menace d'erreur)
-                threats.append({
-                    'type': 'error',
-                    'message': 'Erreur lors de la détection d\'anomalie',
-                    'details': str(e),
-                    'confidence': 0.0
-                })
-        else:
-            self.logger.warning("Le modèle d'anomalie n'est pas entraîné. La détection d'anomalies est désactivée.")
+                return threats  # Ne pas ajouter de fausses menaces
 
         return threats

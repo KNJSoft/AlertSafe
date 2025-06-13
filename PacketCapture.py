@@ -5,27 +5,48 @@ import queue
 from scapy.layers.inet import IP, TCP
 
 class PacketCapture:
-    def __init__(self):
-        self.packet_queue = queue.Queue()
+    def __init__(self, max_queue_size=1000):
+        self.packet_queue = queue.Queue(maxsize=max_queue_size)
         self.stop_capture = threading.Event()
+        self.interface = None
+        self.logger = logging.getLogger(__name__)
 
     def packet_callback(self, packet):
-        if IP in packet and TCP in packet:
-            self.packet_queue.put(packet)
+        try:
+            if IP in packet and TCP in packet:
+                self.packet_queue.put_nowait(packet)
+        except queue.Full:
+            self.logger.warning("Queue pleine, paquet ignoré")
 
     def start_capture(self, interface="eth0"):
-        def capture_thread():
-            sniff(iface=interface,
-                  prn=self.packet_callback,
-                  store=0,
-                  stop_filter=lambda _: self.stop_capture.is_set())
+        try:
+            import netifaces as ni
+            if interface not in ni.interfaces():
+                raise ValueError(f"Interface {interface} n'existe pas")
+            
+            self.interface = interface
+            def capture_thread():
+                try:
+                    sniff(iface=self.interface,
+                          prn=self.packet_callback,
+                          store=0,
+                          stop_filter=lambda _: self.stop_capture.is_set())
+                except Exception as e:
+                    self.logger.error(f"Erreur lors de la capture : {e}")
+                    self.stop_capture.set()
 
-        self.capture_thread = threading.Thread(target=capture_thread)
-        self.capture_thread.start()
+            self.capture_thread = threading.Thread(target=capture_thread, daemon=True)
+            self.capture_thread.start()
+            self.logger.info(f"Capture démarrée sur {self.interface}")
+        except Exception as e:
+            self.logger.error(f"Erreur lors du démarrage de la capture : {e}")
+            raise
 
     def stop(self):
         self.stop_capture.set()
-        self.capture_thread.join()
+        if hasattr(self, 'capture_thread') and self.capture_thread.is_alive():
+            self.capture_thread.join()
+            self.logger.info("Capture arrêtée")
 
 
 class TrafficAnalyzer:
