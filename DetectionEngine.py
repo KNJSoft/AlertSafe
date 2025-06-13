@@ -1,6 +1,7 @@
 from sklearn.ensemble import IsolationForest
 import numpy as np
 import logging
+from scapy.layers.inet import IP, TCP
 
 class DetectionEngine:
     def __init__(self):
@@ -41,12 +42,44 @@ class DetectionEngine:
             return
 
         try:
-            self.anomaly_detector.fit(normal_traffic_data)
+            # Convertir les données en features numériques
+            features = []
+            for packet in normal_traffic_data:
+                # Vérifier si le paquet contient les couches IP et TCP
+                if packet.haslayer(IP) and packet.haslayer(TCP):
+                    # Extraire des features numériques
+                    feature_vector = [
+                        len(packet),  # Taille du paquet
+                        packet[IP].ttl,  # TTL
+                        packet[IP].flags.value,  # Flags IP (utiliser .value pour obtenir un entier)
+                        packet[TCP].sport,  # Port source
+                        packet[TCP].dport,  # Port destination
+                        packet[TCP].flags.value,  # Flags TCP (utiliser .value pour obtenir un entier)
+                        packet[TCP].window,  # Fenêtre TCP
+                        packet[TCP].seq,  # Numéro de séquence
+                        packet[TCP].ack,  # Numéro d'acquittement
+                        packet.time  # Timestamp
+                    ]
+                    features.append(feature_vector)
+
+            if not features:
+                self.logger.error("Aucune donnée valide pour l'entraînement")
+                return
+
+            # Convertir en numpy array
+            features_array = np.array(features)
+            
+            # Normaliser les données
+            from sklearn.preprocessing import StandardScaler
+            scaler = StandardScaler()
+            features_normalized = scaler.fit_transform(features_array)
+            
+            # Entraîner le modèle
+            self.anomaly_detector.fit(features_normalized)
             self.is_trained = True
             self.logger.info("Modèle de détection d'anomalies entraîné avec succès.")
         except Exception as e:
             self.logger.error(f"Erreur lors de l'entraînement du modèle : {e}", exc_info=True)
-            # Gérer l'erreur (par exemple, lever une exception, arrêter le programme, utiliser un modèle par défaut)
             raise  # Propager l'exception pour que l'appelant puisse la gérer
 
     def detect_threats(self, features):

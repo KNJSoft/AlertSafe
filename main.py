@@ -68,5 +68,11 @@ class IntrusionDetectionSystem:
 
 
 if __name__ == "__main__":
+    import os
+    if os.geteuid() != 0:
+        print("Error: This script must be run with root privileges to capture network packets")
+        print("Please run with sudo: sudo python3 main.py")
+        exit(1)
+    
     ids = IntrusionDetectionSystem()
     ids.start()

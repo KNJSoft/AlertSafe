@@ -3,6 +3,7 @@ from collections import defaultdict
 import threading
 import queue
 from scapy.layers.inet import IP, TCP
+import logging
 
 class PacketCapture:
     def __init__(self, max_queue_size=1000):
@@ -18,12 +19,11 @@ class PacketCapture:
         except queue.Full:
             self.logger.warning("Queue pleine, paquet ignoré")
 
-    def start_capture(self, interface="eth0"):
+    def start_capture(self, interface="auto"):
         try:
-            import netifaces as ni
-            if interface not in ni.interfaces():
-                raise ValueError(f"Interface {interface} n'existe pas")
-            
+            if interface == "auto":
+                # Use a common default interface
+                interface = "wlp2s0"  # Common wireless interface name on Linux
             self.interface = interface
             def capture_thread():
                 try:

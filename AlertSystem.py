@@ -1,6 +1,8 @@
 import logging
 import json
 from datetime import datetime
+from scapy.packet import Packet
+from scapy.fields import FlagValue
 
 class AlertSystem:
     def __init__(self, log_file="ids_alerts.log"):
@@ -24,7 +26,15 @@ class AlertSystem:
             'details': threat
         }
 
-        self.logger.warning(json.dumps(alert))
+        class ScapyJSONEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, FlagValue):
+                    return str(obj)
+                if isinstance(obj, Packet):
+                    return str(obj)
+                return super().default(obj)
+
+        self.logger.warning(json.dumps(alert, cls=ScapyJSONEncoder))
 
         if threat['confidence'] > 0.8:
             self.logger.critical(
