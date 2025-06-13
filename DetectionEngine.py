@@ -2,6 +2,7 @@ from sklearn.ensemble import IsolationForest
 import numpy as np
 import logging
 from scapy.layers.inet import IP, TCP
+from scapy.packet import Packet
 
 class DetectionEngine:
     def __init__(self):
@@ -42,32 +43,27 @@ class DetectionEngine:
             return
 
         try:
-            # Convertir les données en features numériques
+            # Extraire les valeurs numériques des dictionnaires
             features = []
-            for packet in normal_traffic_data:
-                # Vérifier si le paquet contient les couches IP et TCP
-                if packet.haslayer(IP) and packet.haslayer(TCP):
-                    # Extraire des features numériques
-                    feature_vector = [
-                        len(packet),  # Taille du paquet
-                        packet[IP].ttl,  # TTL
-                        packet[IP].flags.value,  # Flags IP (utiliser .value pour obtenir un entier)
-                        packet[TCP].sport,  # Port source
-                        packet[TCP].dport,  # Port destination
-                        packet[TCP].flags.value,  # Flags TCP (utiliser .value pour obtenir un entier)
-                        packet[TCP].window,  # Fenêtre TCP
-                        packet[TCP].seq,  # Numéro de séquence
-                        packet[TCP].ack,  # Numéro d'acquittement
-                        packet.time  # Timestamp
-                    ]
-                    features.append(feature_vector)
+            for feature_dict in normal_traffic_data:
+                # Extraire les valeurs numériques dans l'ordre correct
+                feature_vector = [
+                    float(feature_dict.get('packet_size', 0)),
+                    float(feature_dict.get('flow_duration', 0)),
+                    float(feature_dict.get('packet_rate', 0)),
+                    float(feature_dict.get('byte_rate', 0)),
+                    float(feature_dict.get('tcp_flags', 0)),
+                    float(feature_dict.get('window_size', 0)),
+                    float(feature_dict.get('protocol', 0))
+                ]
+                features.append(feature_vector)
 
             if not features:
                 self.logger.error("Aucune donnée valide pour l'entraînement")
                 return
 
-            # Convertir en numpy array
-            features_array = np.array(features)
+            # Convertir en numpy array avec dtype explicite
+            features_array = np.array(features, dtype=np.float64)
             
             # Normaliser les données
             from sklearn.preprocessing import StandardScaler
@@ -82,7 +78,7 @@ class DetectionEngine:
             self.logger.error(f"Erreur lors de l'entraînement du modèle : {e}", exc_info=True)
             raise  # Propager l'exception pour que l'appelant puisse la gérer
 
-    def detect_threats(self, features):
+    def detect_threats(self, features, packet_capture_interface=None):
         threats = []
 
         # Vérifier que les fonctionnalités nécessaires sont présentes
@@ -101,6 +97,7 @@ class DetectionEngine:
                         'rule': rule_name,
                         'description': rule_data['description'],
                         'confidence': rule_data['confidence'],
+                        'interface': packet_capture_interface if packet_capture_interface else 'unknown',
                         'details': features
                     })
             except Exception as e:
@@ -110,11 +107,12 @@ class DetectionEngine:
         # Détection d'anomalies
         if self.is_trained:
             try:
+                # Convertir les features en valeurs numériques
                 feature_vector = np.array([[
-                    features['packet_size'],
-                    features['packet_rate'],
-                    features['byte_rate']
-                ]])
+                    float(features.get('packet_size', 0)),
+                    float(features.get('packet_rate', 0)),
+                    float(features.get('byte_rate', 0))
+                ]], dtype=np.float64)
                 
                 if feature_vector.size == 0:
                     self.logger.warning("Vector de features vide")
@@ -127,6 +125,7 @@ class DetectionEngine:
                         'type': 'anomaly',
                         'score': anomaly_score,
                         'confidence': confidence,
+                        'interface': packet_capture_interface if packet_capture_interface else 'unknown',
                         'details': features
                     })
             except Exception as e:

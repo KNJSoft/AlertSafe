@@ -23,6 +23,7 @@ class AlertSystem:
             'source_ip': packet_info.get('source_ip'),
             'destination_ip': packet_info.get('destination_ip'),
             'confidence': threat.get('confidence', 0.0),
+            'interface': threat.get('interface', 'unknown'),
             'details': threat
         }
 

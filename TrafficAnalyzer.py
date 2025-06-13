@@ -72,12 +72,19 @@ class TrafficAnalyzer:
                 packet_rate = stats['packet_count'] / flow_duration
                 byte_rate = stats['byte_count'] / flow_duration
                 
+            # Convertir les flags TCP en entier
+            tcp_flags_value = 0
+            if isinstance(packet[TCP].flags, int):
+                tcp_flags_value = packet[TCP].flags
+            else:
+                tcp_flags_value = int(packet[TCP].flags)
+
             return {
                 'packet_size': len(packet),
                 'flow_duration': flow_duration,
                 'packet_rate': packet_rate,
                 'byte_rate': byte_rate,
-                'tcp_flags': packet[TCP].flags,
+                'tcp_flags': tcp_flags_value,
                 'window_size': packet[TCP].window,
                 'protocol': packet[IP].proto
             }
