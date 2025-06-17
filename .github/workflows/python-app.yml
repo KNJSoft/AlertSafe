@@ -32,7 +32,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest numpy scikit-learn
+        pip install flake8 pytest pytest-cov numpy scikit-learn
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Lint with flake8
@@ -100,4 +100,4 @@ jobs:
 
     - name: Run pytest
       run: |
-        pytest -v --cov=AlertSafe --cov-report=xml
+        python -m pytest -v
