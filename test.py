@@ -19,6 +19,33 @@ def test_ids():
         IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=22, flags="S"),
         IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=23, flags="S"),
         IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=25, flags="S"),
+
+        # DDoS simulation
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+
+        # Suspicious activity simulation
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+        IP(src="192.168.1.100", dst="192.168.1.2") / TCP(sport=4321, dport=80, flags="S"),
+
+
+        
     ]
 
     ids = IntrusionDetectionSystem()
